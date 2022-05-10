@@ -1,67 +1,99 @@
 import { WebSocketServer } from 'ws';
-import {v4 as uuid} from "uuid";
-import {
-    writeFile,
-    readFileSync,
-    existsSync
-} from "fs";
-
+import {hri} from "human-readable-ids";
+const Actions = ["1","2","3"]
+let gameState = {
+    matches: 33,
+    lastTurn: {
+        clientId: '',
+        action: ''
+    },
+    loser: null
+}
 /**
- * системный id
+ * chooses what to do.
  * */
-const SYSTEM = "SYSTEM";
-const clients = {};
+export function actionReducer( clientId, action ) {
+    logOnServer("===============================================================")
 
-const log = existsSync('log') && readFileSync('log', 'utf-8');
-const messages = log? JSON.parse(log) : [];
+    logOnServer(gameState)
+
+    if(Actions.includes(action)) {
+        let newMatches = gameState.matches;
+        logOnServer(newMatches)
+        if(clientId===gameState.lastTurn.clientId && gameState.matches>1){
+            /*if its player of last turn who wants to change their amount of matches taken we'll provide that opportunity.*/
+            newMatches += Number(gameState.lastTurn.action)
+            logOnServer(' after plus ', newMatches)
+        }
+        newMatches -= Number(action)
+        logOnServer(' after minus ', newMatches)
+
+        gameState = {
+            ...gameState,
+            matches: newMatches,
+            lastTurn: {
+                clientId,
+                action
+            },
+        }
+        logOnServer(gameState)
+        logOnServer("===============================================================")
+        return true
+    }
+    return false
+}
+import {sendToClient, logOnServer } from "./logging.js"
+
+const clients = {};
+const twoPlayersAppeared = () => Object.keys(clients).length>1
 
 const wss = new WebSocketServer({
     port: 8000
 });
-
 wss.on("connection", ws => {
-    const id = uuid();
+    if(twoPlayersAppeared()){
+        sendToClient(ws, `Too many players on server. Try join later.`)
+        ws.close()
+        return
+    }
+    const id = hri.random();
     clients[id] = ws;
 
-    console.log(`New client ${id} appeared`);
+    sendToClient(ws, `Your ID = ${id}`)
+
+    logOnServer(`New client ${id} appeared`);
     Object.entries(clients).forEach(([clientId, clientWs]) => {
-        if (clientId!==id) {
-            clientWs.send(JSON.stringify([{
-                id: SYSTEM,
-                data: `New client ${id} appeared`
-            }]))
+        if (clientId!==id || twoPlayersAppeared()) {
+            sendToClient(clientWs, `${clientId!==id? `New client ${id} appeared. ` : ``} ${twoPlayersAppeared()? 'Two players here. Game start!' : ''}`)
         }
     })
 
-    ws.send(JSON.stringify([{
-        id: SYSTEM,
-        data: `Your ID = ${id}`
-    }]))
-    /*отошлем также историю сообщений*/
-    ws.send(JSON.stringify(messages))
-
     ws.on('message', (rawMessage) => {
-        const data = JSON.parse(rawMessage);
-        console.log(`client ${id}: ${data}`)
-        messages.push({id, data});
-        Object.values(clients).forEach(clientWs => {
-            clientWs.send(JSON.stringify([{id, data}]))
-        })
+        const action = JSON.parse(rawMessage);
+        logOnServer(`client ${id}: ${action}`, typeof action)
+        if(!twoPlayersAppeared()) {
+            sendToClient(ws, "Second player did not arrived yet. Be patient!")
+            return
+        }
+        const amIPrevPlayer = id===gameState.lastTurn.clientId
+        if(actionReducer(id, action)){
+            const gameIsOver = gameState.matches <= 0
+            const message = gameIsOver? `Game is over!\n${gameState.lastTurn.clientId} has taken all the matches!\nThe winner is ${Object.keys(clients).find((key) => key!==gameState.lastTurn.clientId)}!!!!!!!!!!!!!!!`
+                                        :`client ${id} ${amIPrevPlayer? "changes their mind and ":""} takes ${action} matches.\nMatches on the table: ${gameState.matches}`
+            logOnServer(message)
+            Object.values(clients).forEach(clientWs => {
+                sendToClient(clientWs, message)
+            })
+            if(gameIsOver){
+                Object.values(clients).forEach(clientWs => clientWs.close())
+            }
+        } else {
+            sendToClient(ws,`Unknown action: ${action}. Try something else!`)
+        }
     })
 
     ws.on('close', () => {
         delete clients[id];
-        console.log(`Client is closed ${id}`)
+        logOnServer(`Client is closed ${id}`)
     })
-})
-
-process.on('SIGINT', () => {
-    wss.close();
-    writeFile('log', JSON.stringify(messages), error => {
-        if(error){
-        console.log(error)
-        }
-        process.exit();
-    })
-
 })
