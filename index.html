@@ -12,16 +12,16 @@
 
 <body>
     <div class="chat">
-        <h1>Тестирование веб-сокет сервера</h1>
-        <input type="button" value="Подключиться" onclick="connect()" class="btn">
+        <h1>WebSocket server testing</h1>
+        <input type="button" value="Connect" onclick="connect()" class="btn">
         <br><br>
         <form id="messageForm">
-            <h2>Запрос:</h2>
+            <h2>Query:</h2>
             <textarea rows="10" cols="100" id='query'></textarea><br>
-            <input disabled type="submit" value="Отправить" class="btn" id="sendBtn">
+            <input disabled type="submit" value="Send" class="btn" id="sendBtn">
         </form>
         <br><br>
-        <h2>Ответы:</h2>
+        <h2>Responses:</h2>
         <textarea disabled rows="10" cols="100" id='log'></textarea>
     </div>
 
@@ -55,7 +55,7 @@
         function send(event) {
             event.preventDefault();
             if(!ws){
-                alert('Вы не подключены к веб-сокет серверу');
+                alert('WebSocket server connection IS NOT established');
                 return;
             }
             const data = textarea.value;
