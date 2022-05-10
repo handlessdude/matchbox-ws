@@ -12,7 +12,26 @@
 
 <body>
     <div class="chat">
-        <h1>WebSocket server testing</h1>
+        <h1>Matchbox Game</h1>
+        <h2>The rules:</h2>
+        <div class="rules">
+            <ol>
+                <li>2 players required</li>
+                <li>Game starts automatically when the second player appears</li>
+                <li>33 matches overall</li>
+                <li>You can take 1, 2 or 3 matches at once</li>
+                <li>In case it's not your last turn, you may change the amount of taken matches until the opponent takes their matches</li>
+                <li>If you take the last match, you lose</li>
+            </ol>
+        </div>
+        <h2>Commands:</h2>
+        <div class="rules">
+            <ul>
+                <li><span>1</span> - take one match</li>
+                <li><span>2</span> - take two matches</li>
+                <li><span>3</span> - take three matches</li>
+            </ul>
+        </div>
         <input type="button" value="Connect" onclick="connect()" class="btn">
         <br><br>
         <form id="messageForm">
