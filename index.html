@@ -34,17 +34,19 @@
         function connect()  {
             ws = new WebSocket('ws://127.0.0.1:8000');
             ws.onopen = function() {
-                addLog("Соединение с веб-сокет сервером установлено");
+                addLog("WebSocket server connection established");
                 sendBtn.disabled = false;
             };
             ws.onclose = function() {
-                addLog("Соединение с веб-сокет сервером разорвано");
+                addLog("WebSocket server connection terminated");
+                sendBtn.disabled = true;
             };
             ws.onerror = function(error) {
-                addLog("Ошибка " + error.message);
+                addLog("Error: " + error.message);
             };
             ws.onmessage = function(event) {
-                addLog("Получен ответ: " + event.data);
+                const messages = JSON.parse(event.data)
+                messages.forEach(message => addLog(`${message.id}: ${message.data}`))
             };
         }
         function addLog(s) {
@@ -52,17 +54,14 @@
         }
         function send(event) {
             event.preventDefault();
-            //typeof ws == 'undefined'
             if(!ws){
                 alert('Вы не подключены к веб-сокет серверу');
                 return;
             }
             const data = textarea.value;
             ws.send(JSON.stringify(data));
-            //ws.send(data);
-            addLog("Отправлен запрос: " + data);
             return false;
-        };
+        }
 
         const formEl = document.getElementById("messageForm");
         formEl.addEventListener("submit", send);
