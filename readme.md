@@ -3,7 +3,7 @@
 
 ```sh
 npm init
-npx nodemon server.js
+npm start
 ```
 
 ### Задание к ЛР 6

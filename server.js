@@ -1,40 +1,44 @@
 import { WebSocketServer } from 'ws';
 import {hri} from "human-readable-ids";
+
 const Actions = ["1","2","3"]
 let gameState = {
     matches: 33,
     lastTurn: {
         clientId: '',
         action: ''
-    },
-    loser: null
+    }
+}
+const resetGame = () => {
+    gameState = {
+        matches: 33,
+        lastTurn: {
+            clientId: '',
+            action: ''
+        }
+    }
 }
 /**
  * chooses what to do.
  * */
 export function actionReducer( clientId, action ) {
-    logOnServer("===============================================================")
+    logOnServer("========================= ANOTHER TURN ============================")
 
     logOnServer(gameState)
 
     if(Actions.includes(action)) {
         let newMatches = gameState.matches;
-        logOnServer(newMatches)
         if(clientId===gameState.lastTurn.clientId && gameState.matches>1){
             /*if its player of last turn who wants to change their amount of matches taken we'll provide that opportunity.*/
             newMatches += Number(gameState.lastTurn.action)
-            logOnServer(' after plus ', newMatches)
         }
         newMatches -= Number(action)
-        logOnServer(' after minus ', newMatches)
-
         gameState = {
-            ...gameState,
             matches: newMatches,
             lastTurn: {
                 clientId,
                 action
-            },
+            }
         }
         logOnServer(gameState)
         logOnServer("===============================================================")
@@ -47,9 +51,9 @@ import {sendToClient, logOnServer } from "./logging.js"
 const clients = {};
 const twoPlayersAppeared = () => Object.keys(clients).length>1
 
-const wss = new WebSocketServer({
-    port: 8000
-});
+const wssConfig = {port: process.env.PORT ?? 8000}
+const wss = new WebSocketServer(wssConfig);
+logOnServer(`Server listening on port ${wssConfig.port}`)
 wss.on("connection", ws => {
     if(twoPlayersAppeared()){
         sendToClient(ws, `Too many players on server. Try join later.`)
@@ -70,7 +74,7 @@ wss.on("connection", ws => {
 
     ws.on('message', (rawMessage) => {
         const action = JSON.parse(rawMessage);
-        logOnServer(`client ${id}: ${action}`, typeof action)
+        logOnServer(`client ${id} action: ${action}`, typeof action)
         if(!twoPlayersAppeared()) {
             sendToClient(ws, "Second player did not arrived yet. Be patient!")
             return
@@ -85,6 +89,7 @@ wss.on("connection", ws => {
                 sendToClient(clientWs, message)
             })
             if(gameIsOver){
+                resetGame()
                 Object.values(clients).forEach(clientWs => clientWs.close())
             }
         } else {

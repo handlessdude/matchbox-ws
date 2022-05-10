@@ -34,7 +34,7 @@
                     <li><span>3</span> - take three matches</li>
                 </ul>
             </div>
-            <input type="button" value="Connect" onclick="connect()" class="btn">
+            <input type="button" value="Connect" onclick="connect()" class="btn" id="connectBtn">
         </div>
 
         <br><br>
@@ -56,16 +56,19 @@
         const log = document.getElementById('log');
         const textarea = document.getElementById('query');
         const sendBtn = document.getElementById('sendBtn');
+        const connectBtn = document.getElementById('connectBtn');
 
         function connect()  {
             ws = new WebSocket('ws://127.0.0.1:8000');
             ws.onopen = function() {
                 addLog("WebSocket server connection established");
                 sendBtn.disabled = false;
+                connectBtn.disabled = true;
             };
             ws.onclose = function() {
                 addLog("WebSocket server connection terminated");
                 sendBtn.disabled = true;
+                connectBtn.disabled = false;
             };
             ws.onerror = function(error) {
                 addLog("Error: " + error.message);
