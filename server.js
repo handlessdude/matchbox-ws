@@ -1,17 +1,25 @@
 import { WebSocketServer } from 'ws';
 import {v4 as uuid} from "uuid";
-const clients = {};
-const messages = [];
+import {
+    writeFile,
+    readFileSync,
+    existsSync
+} from "fs";
 
-const wssConfig = {
+const clients = {};
+
+const log = existsSync('log') && readFileSync('log')
+const messages = JSON.parse(log) || [];
+
+const wss = new WebSocketServer({
     port: 8000
-}
-const wss = new WebSocketServer(wssConfig);
+});
 
 wss.on("connection", ws => {
     const id = uuid();
     clients[id] = ws;
     console.log(`New client ${id}`);
+    ws.send(JSON.stringify(messages))
 
     ws.on('message', (rawMessage) => {
         const data = JSON.parse(rawMessage);
@@ -27,4 +35,15 @@ wss.on("connection", ws => {
         delete clients[id];
         console.log(`Client is closed ${id}`)
     })
+})
+
+process.on('SIGINT', () => {
+    wss.close();
+    writeFile('log', JSON.stringify(messages), error => {
+        if(error){
+        console.log(error)
+        }
+        process.exit();
+    })
+
 })
