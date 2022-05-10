@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="styles.css">
+    <title>MATCHBOX CLIENT</title>
+</head>
+
+<body>
+    <div class="chat">
+        <h1>Тестирование веб-сокет сервера</h1>
+        <input type="button" value="Подключиться" onclick="connect()" class="btn">
+        <br><br>
+        <form id="messageForm">
+            <h2>Запрос:</h2>
+            <textarea rows="10" cols="100" id='query'></textarea><br>
+            <input disabled type="submit" value="Отправить" class="btn" id="sendBtn">
+        </form>
+        <br><br>
+        <h2>Ответы:</h2>
+        <textarea disabled rows="10" cols="100" id='log'></textarea>
+    </div>
+
+    <script>
+        let ws;
+        const log = document.getElementById('log');
+        const textarea = document.getElementById('query');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function connect()  {
+            ws = new WebSocket('ws://127.0.0.1:8000');
+            ws.onopen = function() {
+                addLog("Соединение с веб-сокет сервером установлено");
+                sendBtn.disabled = false;
+            };
+            ws.onclose = function() {
+                addLog("Соединение с веб-сокет сервером разорвано");
+            };
+            ws.onerror = function(error) {
+                addLog("Ошибка " + error.message);
+            };
+            ws.onmessage = function(event) {
+                addLog("Получен ответ: " + event.data);
+            };
+        }
+        function addLog(s) {
+            log.value = s + "\n---------------------------------\n" + log.value;
+        }
+        function send(event) {
+            event.preventDefault();
+            //typeof ws == 'undefined'
+            if(!ws){
+                alert('Вы не подключены к веб-сокет серверу');
+                return;
+            }
+            const data = textarea.value;
+            ws.send(JSON.stringify(data));
+            //ws.send(data);
+            addLog("Отправлен запрос: " + data);
+            return false;
+        };
+
+        const formEl = document.getElementById("messageForm");
+        formEl.addEventListener("submit", send);
+    </script>
+</body>
+</html>
