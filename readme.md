@@ -2,8 +2,9 @@
 ### Запуск проекта
 
 ```sh
-npm init
-npm start
+docker build .
+docker images # -> take image id
+docker run -d -p 8000:8000 <image_id>
 ```
 
 ### Задание к ЛР 6
